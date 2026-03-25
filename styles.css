@@ -1044,6 +1044,259 @@ button:hover {
   background: rgba(255, 250, 244, 0.82);
 }
 
+.dependency-section {
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at top, rgba(201, 95, 53, 0.08), transparent 46%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.96), rgba(255, 247, 240, 0.92));
+}
+
+.dependency-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dependency-head h4 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.dependency-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.dependency-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.dependency-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  justify-content: flex-end;
+}
+
+.dependency-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.legend-swatch.incoming {
+  background: #3f7f9b;
+}
+
+.legend-swatch.outgoing {
+  background: #c95f35;
+}
+
+.legend-swatch.context {
+  background: #7a6d5f;
+}
+
+.dependency-graph {
+  position: relative;
+  min-height: 320px;
+  border-radius: 18px;
+  border: 1px solid rgba(111, 98, 84, 0.14);
+  background:
+    linear-gradient(rgba(111, 98, 84, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 98, 84, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(252, 246, 241, 0.92));
+  background-size: 24px 24px, 24px 24px, auto;
+  overflow: hidden;
+}
+
+.dependency-graph.large {
+  min-height: 100%;
+  width: 100%;
+}
+
+.dependency-edges,
+.dependency-nodes {
+  position: absolute;
+  inset: 0;
+}
+
+.dependency-edges {
+  width: 100%;
+  height: 100%;
+  transform: scale(var(--graph-scale, 1));
+  transform-origin: center;
+  transition: transform 140ms ease;
+}
+
+.dependency-nodes {
+  transform: scale(var(--graph-scale, 1));
+  transform-origin: center;
+  transition: transform 140ms ease;
+}
+
+.dependency-edge {
+  stroke-width: 0.85;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+.dependency-edge.from-incoming {
+  stroke: rgba(63, 127, 155, 0.85);
+}
+
+.dependency-edge.from-center {
+  stroke: rgba(201, 95, 53, 0.85);
+}
+
+.dependency-edge.edge-co-located {
+  stroke: rgba(111, 98, 84, 0.55);
+  stroke-dasharray: 2.2 1.6;
+}
+
+.dependency-node {
+  position: absolute;
+  width: min(150px, 34%);
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(111, 98, 84, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 22px rgba(55, 37, 20, 0.08);
+  text-align: left;
+}
+
+.dependency-node:not(:disabled) {
+  cursor: pointer;
+}
+
+.dependency-node:not(:disabled):hover {
+  transform: translate(-50%, -50%) translateY(-2px);
+  box-shadow: 0 14px 28px rgba(55, 37, 20, 0.12);
+}
+
+.dependency-node:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.dependency-node.role-center {
+  width: min(180px, 42%);
+  border-color: rgba(201, 95, 53, 0.34);
+  background: linear-gradient(180deg, rgba(255, 241, 232, 0.98), rgba(255, 250, 245, 0.98));
+}
+
+.dependency-node.role-incoming {
+  border-color: rgba(63, 127, 155, 0.24);
+  background: rgba(242, 249, 252, 0.96);
+}
+
+.dependency-node.role-outgoing {
+  border-color: rgba(201, 95, 53, 0.24);
+  background: rgba(255, 245, 240, 0.96);
+}
+
+.dependency-node.role-context {
+  border-color: rgba(111, 98, 84, 0.16);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.dependency-node-label {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.dependency-node-meta {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.dependency-expand-button {
+  white-space: nowrap;
+}
+
+.graph-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.graph-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(25, 20, 15, 0.48);
+  backdrop-filter: blur(8px);
+}
+
+.graph-modal-dialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1180px, calc(100vw - 40px));
+  height: min(820px, calc(100vh - 40px));
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 28px;
+  border: 1px solid rgba(111, 98, 84, 0.16);
+  background: linear-gradient(180deg, rgba(255, 249, 243, 0.98), rgba(255, 255, 255, 0.96));
+  box-shadow: 0 24px 70px rgba(26, 18, 12, 0.24);
+}
+
+.graph-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.graph-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.graph-modal-canvas {
+  --graph-scale: 1;
+  min-height: 0;
+  height: 100%;
+  margin-top: 16px;
+}
+
+.graph-modal-canvas .dependency-graph {
+  min-height: 100%;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
 .related-section h4 {
   margin: 0;
   font-size: 0.92rem;
@@ -1159,9 +1412,49 @@ button:hover {
   .result-grid {
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   }
+
+  .dependency-node {
+    width: min(148px, 38%);
+  }
 }
 
 @media (max-width: 920px) {
+  .dependency-head {
+    flex-direction: column;
+  }
+
+  .dependency-actions {
+    align-items: flex-start;
+  }
+
+  .dependency-legend {
+    justify-content: flex-start;
+  }
+
+  .dependency-graph {
+    min-height: 360px;
+  }
+
+  .dependency-node {
+    width: min(136px, 40%);
+    padding: 9px 10px;
+  }
+
+  .graph-modal-dialog {
+    width: min(100vw - 24px, 1180px);
+    height: min(100vh - 24px, 820px);
+    margin: 12px auto;
+    padding: 16px;
+  }
+
+  .graph-modal-head {
+    flex-direction: column;
+  }
+
+  .graph-modal-actions {
+    justify-content: flex-start;
+  }
+
   .topbar,
   .toolbar-meta,
   .list-head,

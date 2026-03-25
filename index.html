@@ -261,6 +261,26 @@
     </article>
   </template>
 
+  <div id="graphModal" class="graph-modal" hidden>
+    <div id="graphModalBackdrop" class="graph-modal-backdrop"></div>
+    <div class="graph-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="graphModalTitle">
+      <div class="graph-modal-head">
+        <div>
+          <p class="detail-eyebrow">Dependency Graph</p>
+          <h3 id="graphModalTitle">의존성 그래프</h3>
+          <p id="graphModalMeta" class="detail-meta">선택한 심볼 주변 관계를 크게 봅니다.</p>
+        </div>
+        <div class="graph-modal-actions">
+          <button id="graphZoomOutButton" type="button" class="ghost">축소</button>
+          <button id="graphZoomInButton" type="button" class="ghost">확대</button>
+          <button id="graphResetViewButton" type="button" class="ghost">초기화</button>
+          <button id="graphModalCloseButton" type="button" class="ghost">닫기</button>
+        </div>
+      </div>
+      <div id="graphModalCanvas" class="graph-modal-canvas"></div>
+    </div>
+  </div>
+
   <script src="./indexer.js"></script>
   <script src="./view-model.js"></script>
   <script src="./app.js"></script>

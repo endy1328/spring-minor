@@ -35,13 +35,22 @@ const downloadCsvButton = document.getElementById("downloadCsvButton");
 const detailTitle = document.getElementById("detailTitle");
 const detailMeta = document.getElementById("detailMeta");
 const detailBody = document.getElementById("detailBody");
+const graphModal = document.getElementById("graphModal");
+const graphModalBackdrop = document.getElementById("graphModalBackdrop");
+const graphModalTitle = document.getElementById("graphModalTitle");
+const graphModalMeta = document.getElementById("graphModalMeta");
+const graphModalCanvas = document.getElementById("graphModalCanvas");
+const graphModalCloseButton = document.getElementById("graphModalCloseButton");
+const graphZoomOutButton = document.getElementById("graphZoomOutButton");
+const graphZoomInButton = document.getElementById("graphZoomInButton");
+const graphResetViewButton = document.getElementById("graphResetViewButton");
 
 const summaryCardTemplate = document.getElementById("summaryCardTemplate");
 const resultSectionTemplate = document.getElementById("resultSectionTemplate");
 
 const { buildIndex, buildSummary, createEmptyIndex, getDocumentType, hydrateIndexFromSnapshot, serializeIndex } =
   window.SpringMinerIndexer;
-const { buildDatasetMeta, buildRelationGroups, buildRelatedMap, buildResultMap, buildScopeLabel, buildSummaryCards, getFilteredNames, getSelectedEntry, getUnfilteredNames, getVisibleOccurrences } =
+const { buildDatasetMeta, buildDependencyGraphData, buildRelationGroups, buildRelatedMap, buildResultMap, buildScopeLabel, buildSummaryCards, getFilteredNames, getSelectedEntry, getUnfilteredNames, getVisibleOccurrences } =
   window.SpringMinerViewModel;
 
 const categories = [
@@ -110,7 +119,8 @@ const appState = {
   documentListVisibleCount: 0,
   selectedDocumentPath: null,
   selectedItem: null,
-  compareSnapshotId: null
+  compareSnapshotId: null,
+  graphModalState: null
 };
 
 analyzeButton.addEventListener("click", analyzeSources);
@@ -156,6 +166,16 @@ clearDocumentFilterButton.addEventListener("click", () => {
   appState.selectedDocumentPath = null;
   renderSummary();
   renderResults();
+});
+graphModalCloseButton.addEventListener("click", closeGraphModal);
+graphModalBackdrop.addEventListener("click", closeGraphModal);
+graphZoomInButton.addEventListener("click", () => adjustGraphZoom(0.12));
+graphZoomOutButton.addEventListener("click", () => adjustGraphZoom(-0.12));
+graphResetViewButton.addEventListener("click", resetGraphZoom);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !graphModal.hidden) {
+    closeGraphModal();
+  }
 });
 
 initializeFilters();
@@ -822,6 +842,20 @@ function renderDetailPanel(entry, resultMap) {
     detailBody.appendChild(definition);
   }
 
+  const dependencyGraph = buildDependencyGraphData(
+    entry,
+    resultMap,
+    appState.index,
+    categories,
+    appState.activeFileTypes,
+    appState.selectedDocumentPath
+  );
+  const graphSection = buildDependencyGraphSection(dependencyGraph);
+
+  if (graphSection) {
+    detailBody.appendChild(graphSection);
+  }
+
   const relationGroups = buildRelationGroups(entry, resultMap, appState.index, categories, categoryLabels);
   const relationSection = buildRelatedSection("심볼 관계", relationGroups);
 
@@ -908,7 +942,138 @@ function buildRelatedSection(title, relatedMap) {
   return section;
 }
 
+function buildDependencyGraphSection(graph) {
+  if (!graph) {
+    return null;
+  }
+
+  const section = document.createElement("section");
+  section.className = "dependency-section";
+  section.innerHTML = `
+    <div class="dependency-head">
+      <div>
+        <h4>의존성 그래프</h4>
+        <p>선택한 심볼 주변 관계만 축약해 보여줍니다.</p>
+      </div>
+      <div class="dependency-actions">
+        <div class="dependency-legend">
+          <span><i class="legend-swatch incoming"></i>상위</span>
+          <span><i class="legend-swatch outgoing"></i>하위</span>
+          <span><i class="legend-swatch context"></i>같은 문서</span>
+        </div>
+        <button type="button" class="ghost dependency-expand-button">크게 보기</button>
+      </div>
+    </div>
+    <div class="dependency-graph"></div>
+  `;
+
+  const graphHost = section.querySelector(".dependency-graph");
+  mountDependencyGraph(graphHost, graph);
+  section.querySelector(".dependency-expand-button").addEventListener("click", () => openGraphModal(graph));
+
+  return section;
+}
+
+function mountDependencyGraph(host, graph, options = {}) {
+  host.innerHTML = `
+    <div class="dependency-graph${options.large ? " large" : ""}">
+      <svg class="dependency-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="dependency-nodes"></div>
+    </div>
+  `;
+
+  const graphRoot = host.querySelector(".dependency-graph");
+  const edgeLayer = graphRoot.querySelector(".dependency-edges");
+  const nodeLayer = graphRoot.querySelector(".dependency-nodes");
+  const nodeMap = new Map(graph.nodes.map((node) => [node.id, node]));
+
+  graph.edges.forEach((edge) => {
+    const fromNode = nodeMap.get(edge.from);
+    const toNode = nodeMap.get(edge.to);
+
+    if (!fromNode || !toNode) {
+      return;
+    }
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", fromNode.x);
+    line.setAttribute("y1", fromNode.y);
+    line.setAttribute("x2", toNode.x);
+    line.setAttribute("y2", toNode.y);
+    line.setAttribute("class", `dependency-edge edge-${edge.type} from-${fromNode.role} to-${toNode.role}`);
+    edgeLayer.appendChild(line);
+  });
+
+  graph.nodes.forEach((node) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `dependency-node role-${node.role} kind-${node.categoryKey}`;
+    button.style.left = `${node.x}%`;
+    button.style.top = `${node.y}%`;
+    button.title = `${node.label} · ${categoryLabels[node.categoryKey]}`;
+    button.innerHTML = `
+      <span class="dependency-node-label">${escapeHtml(node.label)}</span>
+      <span class="dependency-node-meta">${escapeHtml(categoryLabels[node.categoryKey])}</span>
+    `;
+
+    if (node.role === "center") {
+      button.disabled = true;
+      button.setAttribute("aria-current", "true");
+    } else {
+      button.addEventListener("click", () => {
+        if (!graphModal.hidden) {
+          closeGraphModal();
+        }
+        selectItem(node.categoryKey, node.name);
+      });
+    }
+
+    nodeLayer.appendChild(button);
+  });
+}
+
+function openGraphModal(graph) {
+  graphModal.hidden = false;
+  graphModalTitle.textContent = "의존성 그래프";
+  graphModalMeta.textContent = "선택한 심볼 주변 관계를 확대해서 봅니다. 노드를 클릭하면 해당 심볼로 이동합니다.";
+  appState.graphModalState = { graph, scale: 1 };
+  mountDependencyGraph(graphModalCanvas, graph, { large: true });
+  resetGraphZoom();
+  document.body.classList.add("modal-open");
+}
+
+function closeGraphModal() {
+  if (graphModal.hidden) {
+    return;
+  }
+
+  graphModal.hidden = true;
+  graphModalCanvas.innerHTML = "";
+  graphModalCanvas.style.removeProperty("--graph-scale");
+  appState.graphModalState = null;
+  document.body.classList.remove("modal-open");
+}
+
+function adjustGraphZoom(delta) {
+  if (!appState.graphModalState) {
+    return;
+  }
+
+  appState.graphModalState.scale = Math.max(0.7, Math.min(1.9, appState.graphModalState.scale + delta));
+  graphModalCanvas.style.setProperty("--graph-scale", String(appState.graphModalState.scale));
+}
+
+function resetGraphZoom() {
+  if (!appState.graphModalState) {
+    return;
+  }
+
+  appState.graphModalState.scale = 1;
+  graphModalCanvas.style.setProperty("--graph-scale", "1");
+}
+
 function renderEmptyState() {
+  closeGraphModal();
   setIndexState(createEmptyIndex());
   appState.analysisMeta = null;
   appState.categoryVisibleCounts = {};
@@ -930,6 +1095,7 @@ function resetAll() {
     return;
   }
 
+  closeGraphModal();
   fileInput.value = "";
   folderInput.value = "";
   reportInput.value = "";

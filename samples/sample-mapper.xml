@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.springminer.sales.mapper.OrderMapper">
+
+    <resultMap id="orderDetailMap" type="com.springminer.sales.vo.OrderDetailVo">
+        <id property="orderId" column="ORDER_ID" />
+        <result property="customerName" column="CUSTOMER_NAME" />
+        <result property="orderStatus" column="ORDER_STATUS" />
+        <result property="deliveryStatus" column="DELIVERY_STATUS" />
+        <result property="orderAmount" column="ORDER_AMOUNT" />
+    </resultMap>
+
+    <select id="selectOrderDetail" parameterType="string" resultMap="orderDetailMap">
+        SELECT
+            ORDER_ID,
+            CUSTOMER_NAME,
+            ORDER_STATUS,
+            DELIVERY_STATUS,
+            ORDER_AMOUNT
+        FROM TB_ORDER
+        WHERE ORDER_ID = #{orderId}
+    </select>
+
+    <update id="updateDeliveryStatus">
+        UPDATE TB_ORDER
+        SET DELIVERY_STATUS = #{deliveryStatus},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ORDER_ID = #{orderId}
+    </update>
+
+</mapper>

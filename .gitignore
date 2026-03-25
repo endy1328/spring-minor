@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Test outputs
+test-results/
+playwright-report/
+
+# Temporary reports and local scratch files
+tmp-*.json
+spring-miner-report*.json
+
+# Java build artifacts
+scripts/*.class
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

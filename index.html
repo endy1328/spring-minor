@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring Miner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <div class="topbar">
+      <div class="brand-block">
+        <p class="eyebrow">In-house Naming Extractor</p>
+        <strong class="product-name">Spring Miner Explorer</strong>
+      </div>
+      <div class="topbar-pills">
+        <span class="status-pill">Java</span>
+        <span class="status-pill">Mapper XML</span>
+        <span class="status-pill">SQL</span>
+        <span class="status-pill">Index + Explorer</span>
+      </div>
+    </div>
+
+    <header class="hero">
+      <div class="hero-main">
+        <h1>Spring 코드와 DB 명명 정보를 더 쉽게 탐색하는 화면</h1>
+        <p class="hero-copy">
+          기존 Spring Framework 프로젝트의 Java, Mapper XML, SQL 텍스트에서
+          클래스명, 메소드명, 변수명, 네임스페이스, 테이블명, 컬럼명을 수집하고,
+          문서 범위와 심볼 관계를 기준으로 바로 탐색할 수 있습니다.
+        </p>
+      </div>
+      <div class="hero-side">
+        <div class="hero-note">
+          <span class="note-label">빠른 시작</span>
+          <p>샘플 채우기 또는 JSON 업로드로 바로 인덱스를 만들고 아래 패널에서 탐색을 시작하세요.</p>
+        </div>
+        <div class="hero-note warm">
+          <span class="note-label">추천 흐름</span>
+          <p>입력 -> 분석 -> 문서 선택 -> 심볼 클릭 -> 정의/참조/연관 항목 확인</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel controls">
+        <div class="section-head">
+          <h2>입력</h2>
+          <p>업로드, 폴더 분석, 스캔 결과 불러오기 중 하나를 선택해 인덱스를 만듭니다.</p>
+        </div>
+
+        <div class="input-grid">
+          <label class="upload-box" for="fileInput">
+            <span class="upload-kicker">Mode 01</span>
+            <span class="upload-title">개별 파일 업로드</span>
+            <span class="upload-desc">Java / XML / SQL / TXT 파일을 여러 개 선택합니다.</span>
+            <input id="fileInput" type="file" multiple accept=".java,.xml,.sql,.txt">
+          </label>
+
+          <label class="upload-box" for="folderInput">
+            <span class="upload-kicker">Mode 02</span>
+            <span class="upload-title">프로젝트 폴더 업로드</span>
+            <span class="upload-desc">상대 경로를 유지한 채 여러 파일을 함께 읽습니다.</span>
+            <input id="folderInput" type="file" multiple webkitdirectory directory>
+          </label>
+
+          <label class="upload-box" for="reportInput">
+            <span class="upload-kicker">Mode 03</span>
+            <span class="upload-title">스캔 결과 JSON 업로드</span>
+            <span class="upload-desc">`scan-project.mjs` 결과를 불러와 대형 프로젝트 인덱스를 바로 탐색합니다.</span>
+            <input id="reportInput" type="file" accept=".json">
+          </label>
+        </div>
+
+        <div class="editor-wrap">
+          <div class="editor-head">
+            <label class="text-label" for="sourceInput">코드 또는 SQL 붙여넣기</label>
+            <span class="editor-badge">Scratch Pad</span>
+          </div>
+          <textarea
+            id="sourceInput"
+            placeholder="예: Java 클래스, MyBatis Mapper XML, CREATE TABLE 또는 SELECT 문 등을 붙여넣으세요."
+          ></textarea>
+        </div>
+
+        <div class="action-row">
+          <button id="analyzeButton" type="button">분석 실행</button>
+          <button id="sampleButton" type="button" class="ghost">샘플 채우기</button>
+          <button id="resetButton" type="button" class="ghost">초기화</button>
+        </div>
+        <div id="progressPanel" class="progress-panel" hidden>
+          <div class="progress-head">
+            <strong id="progressTitle">분석 준비 중</strong>
+            <span id="progressStageLabel">대기</span>
+          </div>
+          <div class="progress-stage-list">
+            <div class="progress-stage">
+              <div class="progress-stage-meta">
+                <span>파일 읽기</span>
+                <strong id="readProgressPercent">0%</strong>
+              </div>
+              <div class="progress-track" aria-hidden="true">
+                <div id="readProgressFill" class="progress-fill"></div>
+              </div>
+            </div>
+            <div class="progress-stage">
+              <div class="progress-stage-meta">
+                <span>인덱스 생성</span>
+                <strong id="indexProgressPercent">0%</strong>
+              </div>
+              <div class="progress-track" aria-hidden="true">
+                <div id="indexProgressFill" class="progress-fill"></div>
+              </div>
+            </div>
+            <div class="progress-stage">
+              <div class="progress-stage-meta">
+                <span>화면 구성</span>
+                <strong id="renderProgressPercent">0%</strong>
+              </div>
+              <div class="progress-track" aria-hidden="true">
+                <div id="renderProgressFill" class="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+          <p id="progressMessage" class="progress-message">파일을 확인하고 있습니다.</p>
+        </div>
+      </section>
+
+      <section class="panel summary-panel">
+        <div class="section-head">
+          <h2>인덱스 개요</h2>
+          <p>현재 로드된 데이터셋의 규모와 분석 대상 문서를 빠르게 파악합니다.</p>
+        </div>
+
+        <div class="summary-shell">
+          <div class="summary-primary">
+            <div id="summaryCards" class="summary-cards"></div>
+            <div id="datasetMeta" class="dataset-meta">
+              <p class="empty-state">아직 분석된 인덱스가 없습니다.</p>
+            </div>
+          </div>
+
+          <div class="summary-secondary">
+            <div class="file-list-wrap">
+              <div class="list-head">
+                <h3>문서 탐색</h3>
+                <button id="clearDocumentFilterButton" type="button" class="ghost">문서 필터 해제</button>
+              </div>
+              <ul id="fileList" class="file-list"></ul>
+              <div id="fileListFooter" class="file-list-footer" hidden></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-panel">
+          <div class="history-head">
+            <div>
+              <h3>저장된 스냅샷</h3>
+              <p>현재 분석 결과를 저장하고 다시 불러올 수 있습니다.</p>
+            </div>
+            <button id="saveSnapshotButton" type="button" class="ghost">현재 결과 저장</button>
+          </div>
+          <ul id="snapshotList" class="snapshot-list"></ul>
+          <div id="comparePanel" class="compare-panel">
+            <div class="history-head">
+              <div>
+                <h3>변경 비교</h3>
+                <p>저장된 스냅샷과 현재 분석 결과를 비교합니다.</p>
+              </div>
+            </div>
+            <div id="compareBody" class="compare-body">
+              <p class="empty-state">비교할 스냅샷을 선택하세요.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="section-head">
+          <h2>심볼 탐색</h2>
+          <p>검색, 범위 제한, 정렬, 관계 탐색을 조합해 필요한 심볼을 빠르게 찾습니다.</p>
+        </div>
+        <div class="toolbar">
+          <label class="search-box" for="searchInput">
+            <span>검색</span>
+            <input id="searchInput" type="search" placeholder="이름, namespace, 테이블명 검색">
+          </label>
+          <div class="toolbar-meta">
+            <label class="sort-box" for="sortSelect">
+              <span>정렬</span>
+              <select id="sortSelect">
+                <option value="count">발견 수</option>
+                <option value="name">이름</option>
+              </select>
+            </label>
+            <div id="activeScope" class="active-scope">전체 문서 범위</div>
+          </div>
+          <div class="filter-stack">
+            <div>
+              <p class="filter-label">결과 유형</p>
+              <div id="filterGroup" class="filter-group" aria-label="결과 유형 필터"></div>
+            </div>
+            <div>
+              <p class="filter-label">문서 유형</p>
+              <div id="fileTypeGroup" class="filter-group" aria-label="문서 유형 필터"></div>
+            </div>
+          </div>
+          <div class="toolbar-actions">
+            <button id="copyFilteredButton" type="button" class="ghost">현재 결과 복사</button>
+            <button id="copyAllButton" type="button" class="ghost">전체 복사</button>
+            <button id="downloadCsvButton" type="button" class="ghost">CSV 다운로드</button>
+          </div>
+        </div>
+        <div class="result-layout">
+          <div class="result-column">
+            <div class="panel-subhead">
+              <h3>결과 브라우저</h3>
+              <p>카테고리별 심볼을 선택해 상세 분석으로 이동합니다.</p>
+            </div>
+            <div id="resultGrid" class="result-grid"></div>
+          </div>
+          <aside id="detailPanel" class="detail-panel">
+            <div class="detail-head">
+              <p class="detail-eyebrow">Inspector</p>
+              <h3 id="detailTitle">항목을 선택하세요</h3>
+              <p id="detailMeta" class="detail-meta">결과 칩을 클릭하면 정의 위치와 참조, 관계를 볼 수 있습니다.</p>
+            </div>
+            <div id="detailBody" class="detail-body">
+              <p class="empty-state">아직 선택된 결과가 없습니다.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="summaryCardTemplate">
+    <article class="summary-card">
+      <span class="summary-label"></span>
+      <strong class="summary-value"></strong>
+    </article>
+  </template>
+
+  <template id="resultSectionTemplate">
+    <article class="result-card">
+      <div class="result-card-head">
+        <div class="result-title-wrap">
+          <h3></h3>
+          <span class="count-badge"></span>
+        </div>
+        <div class="result-card-actions">
+          <button type="button" class="mini-toggle-button">접기</button>
+          <button type="button" class="mini-copy-button">복사</button>
+        </div>
+      </div>
+      <p class="result-card-summary"></p>
+      <div class="chip-box"></div>
+    </article>
+  </template>
+
+  <script src="./indexer.js"></script>
+  <script src="./view-model.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
